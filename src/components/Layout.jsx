@@ -3,10 +3,12 @@ import { supabase } from '../lib/supabase'
 import { Avatar } from './UI'
 
 const NAV = [
-  { to: '/',         label: 'Pipeline',  icon: '▦' },
-  { to: '/clients',  label: 'Clients',   icon: '⊞' },
-  { to: '/tasks',    label: 'Tasks',     icon: '✓' },
-  { to: '/reports',  label: 'Reports',   icon: '↗' },
+  { to: '/',                    label: 'Pipeline',      icon: '▦' },
+  { to: '/clients',             label: 'Clients',       icon: '⊞' },
+  { to: '/tasks',               label: 'Tasks',         icon: '✓' },
+  { to: '/reports',             label: 'Reports',       icon: '↗' },
+  { to: '/advisors/investment', label: 'Inv. Advisors', icon: '◈', divider: true },
+  { to: '/advisors/tax',        label: 'Tax Advisors',  icon: '◉' },
 ]
 
 export default function Layout({ user, children }) {
@@ -42,28 +44,30 @@ export default function Layout({ user, children }) {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '0.75rem 0.75rem' }}>
-          {NAV.map(({ to, label, icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '8px 12px',
-                borderRadius: 8,
-                marginBottom: 2,
-                fontSize: 13,
-                fontWeight: 500,
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
-                background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                transition: 'all .15s',
-              })}
-            >
-              <span style={{ fontSize: 14, width: 18, textAlign: 'center' }}>{icon}</span>
-              {label}
-            </NavLink>
+          {NAV.map(({ to, label, icon, divider }) => (
+            <div key={to}>
+              {divider && <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '6px 0' }} />}
+              <NavLink
+                to={to}
+                end={to === '/'}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  marginBottom: 2,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                  background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  transition: 'all .15s',
+                })}
+              >
+                <span style={{ fontSize: 14, width: 18, textAlign: 'center' }}>{icon}</span>
+                {label}
+              </NavLink>
+            </div>
           ))}
         </nav>
 
