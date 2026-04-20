@@ -108,15 +108,18 @@ export default function Pipeline() {
 
       {/* Board */}
       <div style={{
-        flex: 1, overflowX: 'auto', overflowY: 'hidden',
-        padding: '1.25rem',
-        display: 'flex', gap: 10
+        flex: 1, overflow: 'hidden',
+        padding: '1rem 1.25rem',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: 10,
+        alignItems: 'start'
       }}>
         {STAGES.map(stage => {
           const m = STAGE_META[stage]
           const cols = byStage(stage)
           return (
-            <div key={stage} style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div key={stage} style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {/* Column header */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
