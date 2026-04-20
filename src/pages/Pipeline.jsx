@@ -1,4 +1,247 @@
-update clients set client_executive = 'James Rambo'    where client_executive = 'James';
-update clients set client_executive = 'Michael Salgado' where client_executive = 'Michael';
-update clients set client_executive = 'James Rambo'    where client_executive ilike '%james%' and client_executive != 'James Rambo';
-update clients set client_executive = 'Michael Salgado' where client_executive ilike '%michael%' and client_executive != 'Michael Salgado';
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useClients, updateClientStage, useTeamMembers } from '../hooks/useClients'
+import { STAGES, STAGE_META } from '../lib/supabase'
+import { StageBadge, TypeBadge, PriorityDot, DocProgress, Avatar } from '../components/UI'
+import NewClientModal from '../components/NewClientModal'
+import { differenceInDays, format } from 'date-fns'
+
+// Follow-up cadence per priority
+const FOLLOWUP_DAYS = { High: 14, Medium: 30, Low: 90 }
+const FOLLOWUP_LABEL = { High: 'Every 2 weeks', Medium: 'Every month', Low: 'Every 3 months' }
+
+export default function Pipeline() {
+  const navigate = useNavigate()
+  const [filters, setFilters] = useState({})
+  const [newOpen, setNewOpen] = useState(false)
+  const { clients, loading, refetch } = useClients(filters)
+  const teamMembers = useTeamMembers()
+
+  function setFilter(k, v) {
+    setFilters(f => ({ ...f, [k]: v || undefined }))
+  }
+
+  async function moveStage(clientId, direction) {
+    const client = clients.find(c => c.id === clientId)
+    const idx = STAGES.indexOf(client.stage)
+    const next = STAGES[idx + direction]
+    if (!next) return
+    await updateClientStage(clientId, next)
+    refetch()
+  }
+
+  const byStage = stage => clients.filter(c => c.stage === stage)
+
+  const metrics = {
+    total:   clients.length,
+    high:    clients.filter(c => c.priority === 'High').length,
+    wip:     clients.filter(c => c.stage === 'WIP').length,
+    ongoing: clients.filter(c => c.stage === 'Ongoing Management').length,
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Header */}
+      <div style={{
+        padding: '1.25rem 1.5rem',
+        borderBottom: '1px solid var(--border)',
+        background: 'var(--surface)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 12
+      }}>
+        <h1 style={{ fontSize: 17, fontWeight: 600 }}>Pipeline</h1>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            placeholder="Search clients…"
+            style={{ width: 170 }}
+            onChange={e => setFilter('search', e.target.value)}
+          />
+          <select onChange={e => setFilter('entity_type', e.target.value)}>
+            <option value="">All types</option>
+            <option>Trust</option>
+            <option>Company</option>
+            <option>Both</option>
+          </select>
+          <select onChange={e => setFilter('priority', e.target.value)}>
+            <option value="">All priority</option>
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+          <select onChange={e => setFilter('client_executive', e.target.value)}>
+            <option value="">All executives</option>
+            <option value="James Rambo">James Rambo</option>
+            <option value="Michael Salgado">Michael Salgado</option>
+            <option value="Mitchell">Mitchell</option>
+          </select>
+          <select onChange={e => setFilter('proposed_director', e.target.value)}>
+            <option value="">All directors</option>
+            <option value="Andrew Fox">Andrew Fox</option>
+            <option value="William Du Toit">William Du Toit</option>
+          </select>
+          <button className="btn btn-ghost" onClick={() => navigate('/advisors/investment')}>
+            + Inv. Advisor
+          </button>
+          <button className="btn btn-ghost" onClick={() => navigate('/advisors/tax')}>
+            + Tax Advisor
+          </button>
+          <button className="btn btn-primary" onClick={() => setNewOpen(true)}>
+            + New client
+          </button>
+        </div>
+      </div>
+
+      {/* Metrics bar */}
+      <div style={{
+        display: 'flex', gap: 0,
+        borderBottom: '1px solid var(--border)',
+        background: 'var(--surface)'
+      }}>
+        {[
+          { label: 'Total clients',      val: metrics.total },
+          { label: 'High priority',      val: metrics.high },
+          { label: 'WIP',                val: metrics.wip },
+          { label: 'Ongoing Management', val: metrics.ongoing },
+        ].map((m, i) => (
+          <div key={i} style={{
+            flex: 1, padding: '10px 1.25rem',
+            borderRight: '1px solid var(--border)',
+          }}>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 2 }}>{m.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 600 }}>{m.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Board */}
+      <div style={{
+        flex: 1, overflowY: 'auto',
+        padding: '1rem 1.25rem',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: 10,
+        alignItems: 'start'
+      }}>
+        {STAGES.map(stage => {
+          const m = STAGE_META[stage]
+          const cols = byStage(stage)
+          return (
+            <div key={stage} style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {/* Column header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '6px 10px',
+                background: m.bg,
+                borderRadius: 8,
+                borderLeft: `3px solid ${m.color}`
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: m.text }}>{stage}</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 600,
+                  background: m.color, color: '#fff',
+                  borderRadius: 20, padding: '1px 7px'
+                }}>{cols.length}</span>
+              </div>
+
+              {/* Cards */}
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {loading && <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-3)' }}>…</div>}
+                {!loading && cols.length === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: '16px 0' }}>
+                    No clients
+                  </div>
+                )}
+                {cols.map(client => (
+                  <ClientCard
+                    key={client.id}
+                    client={client}
+                    onClick={() => navigate(`/clients/${client.id}`)}
+                    onMove={dir => moveStage(client.id, dir)}
+                    stageIndex={STAGES.indexOf(stage)}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <NewClientModal
+        open={newOpen}
+        onClose={() => setNewOpen(false)}
+        onCreated={refetch}
+        teamMembers={teamMembers}
+      />
+    </div>
+  )
+}
+
+function MetaRow({ icon, label, value }) {
+  if (!value) return null
+  return (
+    <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+      <span style={{ flexShrink: 0, fontSize: 10 }}>{icon}</span>
+      <span style={{ color: 'var(--text-3)', fontWeight: 500, flexShrink: 0 }}>{label}:</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{value}</span>
+    </div>
+  )
+}
+
+function ClientCard({ client, onClick, onMove, stageIndex }) {
+  const daysInStage = client.stage_entered_at
+    ? differenceInDays(new Date(), new Date(client.stage_entered_at))
+    : client.created_at
+    ? differenceInDays(new Date(), new Date(client.created_at))
+    : null
+  const daysWarning = daysInStage !== null && daysInStage > 14
+  const daysUrgent  = daysInStage !== null && daysInStage > 30
+  const referralLabel = client.referral_source
+    ? (client.referral_person ? `${client.referral_source} — ${client.referral_person}` : client.referral_source)
+    : client.referral_person || null
+
+  // Follow-up tracking
+  const followupDays    = FOLLOWUP_DAYS[client.priority]
+  const followupLabel   = FOLLOWUP_LABEL[client.priority]
+  const followupOverdue = daysInStage !== null && followupDays && daysInStage > followupDays
+
+  return (
+    <div
+      className="card"
+      onClick={onClick}
+      style={{ padding: '7px 10px', cursor: 'pointer', transition: 'box-shadow .15s' }}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = ''}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4, marginBottom: 3 }}>
+        <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3, flex: 1 }}>{client.name}</div>
+        <TypeBadge type={client.entity_type} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, flexWrap: 'wrap' }}>
+        <PriorityDot priority={client.priority} />
+        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: followupOverdue ? '#FEE2E2' : 'var(--surface2)', color: followupOverdue ? '#991B1B' : 'var(--text-3)', border: `1px solid ${followupOverdue ? '#FCA5A5' : 'var(--border)'}`, fontWeight: followupOverdue ? 600 : 400 }}>
+          {followupOverdue ? '⚠️ Overdue' : `🔁 ${followupLabel}`}
+        </span>
+      </div>
+      <div style={{ marginBottom: 3 }}>
+        <MetaRow icon="👤" label="Exec" value={client.client_executive} />
+        <MetaRow icon="🏛" label="Dir"  value={client.proposed_director} />
+        {referralLabel && <MetaRow icon="↗" label="Ref" value={referralLabel} />}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {daysInStage !== null && (
+            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 20, background: daysUrgent ? '#FEE2E2' : daysWarning ? '#FEF3C7' : 'var(--surface2)', color: daysUrgent ? '#991B1B' : daysWarning ? '#92400E' : 'var(--text-3)' }}>
+              {daysUrgent ? '🔴' : daysWarning ? '🟡' : '🟢'} {daysInStage === 0 ? 'Today' : `${daysInStage}d`}
+            </span>
+          )}
+          {client.assigned_member && <Avatar name={client.assigned_member.full_name} size={16} />}
+        </div>
+        <div style={{ display: 'flex', gap: 2 }} onClick={e => e.stopPropagation()}>
+          {stageIndex > 0 && <button onClick={() => onMove(-1)} style={{ fontSize: 11, color: 'var(--text-3)', padding: '1px 4px' }}>←</button>}
+          {stageIndex < 2 && <button onClick={() => onMove(1)} style={{ fontSize: 11, color: 'var(--accent)', padding: '1px 4px', fontWeight: 600 }}>→</button>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
