@@ -108,7 +108,7 @@ export default function Pipeline() {
 
       {/* Board */}
       <div style={{
-        flex: 1, overflow: 'hidden',
+        flex: 1, overflowY: 'auto',
         padding: '1rem 1.25rem',
         display: 'grid',
         gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
