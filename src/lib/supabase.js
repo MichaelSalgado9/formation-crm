@@ -6,19 +6,15 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export const STAGES = [
-  'Lead / Inquiry',
-  'Document Collection',
-  'Entity Formation',
-  'Compliance / FICA',
+  'Lead / PNC',
+  'WIP',
   'Ongoing Management',
 ]
 
 export const STAGE_META = {
-  'Lead / Inquiry':       { color: '#3B82F6', bg: '#EFF6FF', text: '#1D4ED8' },
-  'Document Collection':  { color: '#8B5CF6', bg: '#F5F3FF', text: '#5B21B6' },
-  'Entity Formation':     { color: '#F59E0B', bg: '#FFFBEB', text: '#92400E' },
-  'Compliance / FICA':    { color: '#EC4899', bg: '#FDF2F8', text: '#9D174D' },
-  'Ongoing Management':   { color: '#10B981', bg: '#ECFDF5', text: '#065F46' },
+  'Lead / PNC':         { color: '#3B82F6', bg: '#EFF6FF', text: '#1D4ED8' },
+  'WIP':                { color: '#F59E0B', bg: '#FFFBEB', text: '#92400E' },
+  'Ongoing Management': { color: '#10B981', bg: '#ECFDF5', text: '#065F46' },
 }
 
 export const PRIORITY_META = {
