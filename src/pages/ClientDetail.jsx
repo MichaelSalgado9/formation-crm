@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useClient, addNote, updateDocStatus, updateClientStage, createTask, updateTask, updateClient } from '../hooks/useClients'
+import { useClient, addNote, updateDocStatus, updateClientStage, createTask, updateTask, updateClient, useTeamMembers } from '../hooks/useClients'
 import { STAGES } from '../lib/supabase'
-import { StageBadge, TypeBadge, PriorityDot, Avatar, Field, Spinner } from '../components/UI'
+import { StageBadge, TypeBadge, PriorityDot, Avatar, Field, Spinner, Modal } from '../components/UI'
 import { formatDistanceToNow, format, differenceInDays, parseISO } from 'date-fns'
 
 const DOC_STATUS_COLORS = {
@@ -19,6 +19,8 @@ export default function ClientDetail() {
   const [tab, setTab] = useState('overview')
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const teamMembers = useTeamMembers()
 
   if (loading) return <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner /></div>
   if (!client) return <div style={{ padding: 40, color: 'var(--text-3)' }}>Client not found.</div>
@@ -66,6 +68,7 @@ export default function ClientDetail() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={() => setEditOpen(true)}>✏️ Edit client</button>
             {stageIdx > 0 && <button className="btn btn-ghost" onClick={() => moveStage(-1)}>← Move back</button>}
             {stageIdx < 4 && <button className="btn btn-primary" onClick={() => moveStage(1)}>Advance to {STAGES[stageIdx + 1]} →</button>}
           </div>
@@ -96,6 +99,7 @@ export default function ClientDetail() {
         {tab === 'notes'      && <NotesTab client={client} noteText={noteText} setNoteText={setNoteText} onSubmit={submitNote} saving={savingNote} />}
         {tab === 'tasks'      && <TasksTab client={client} refetch={refetch} />}
       </div>
+      <EditClientModal open={editOpen} onClose={() => setEditOpen(false)} client={client} teamMembers={teamMembers} onSaved={refetch} />
     </div>
   )
 }
@@ -446,5 +450,152 @@ function TasksTab({ client, refetch }) {
         {!tasks.length && <p style={{ color: 'var(--text-3)', fontSize: 13 }}>No tasks yet.</p>}
       </div>
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────
+// Edit Client Modal — full edit of all fields
+// ─────────────────────────────────────────────
+function EditClientModal({ open, onClose, client, teamMembers = [], onSaved }) {
+  const [form, setForm] = useState({})
+  const [saving, setSaving] = useState(false)
+
+  // Reset form whenever modal opens with latest client data
+  useState(() => { setForm({ ...client }) }, [client, open])
+
+  // Keep form in sync when client changes
+  if (open && form.id !== client.id) setForm({ ...client })
+
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function submit(e) {
+    e.preventDefault()
+    setSaving(true)
+    const payload = {
+      name:                   form.name,
+      email:                  form.email,
+      phone:                  form.phone,
+      id_number:              form.id_number,
+      entity_type:            form.entity_type,
+      priority:               form.priority,
+      assigned_to:            form.assigned_to || null,
+      source:                 form.source,
+      notes:                  form.notes,
+      // Location
+      country:                form.country,
+      city:                   form.city,
+      // Setup
+      setup_type:             form.setup_type,
+      transfer_from_company:  form.setup_type === 'Transfer In' ? form.transfer_from_company : null,
+      // Referral
+      referral_source:        form.referral_source,
+      referral_person:        form.referral_person,
+      // Relationship
+      proposed_director:      form.proposed_director,
+      client_executive:       form.client_executive,
+    }
+    await updateClient(client.id, payload)
+    setSaving(false)
+    onSaved()
+    onClose()
+  }
+
+  const lbl  = { fontSize: 11, fontWeight: 500, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.4px', display: 'block', marginBottom: 4 }
+  const row  = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+  const sect = { fontSize: 12, fontWeight: 600, color: 'var(--text-2)', borderBottom: '1px solid var(--border)', paddingBottom: 6, marginTop: 8 }
+
+  if (!open) return null
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Edit — ${client.name}`} width={600}>
+      <form onSubmit={submit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
+
+          <div style={sect}>Client details</div>
+          <div>
+            <label style={lbl}>Full name / Entity name *</label>
+            <input required value={form.name || ''} onChange={e => set('name', e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <div style={row}>
+            <div><label style={lbl}>Email</label><input type="email" value={form.email || ''} onChange={e => set('email', e.target.value)} style={{ width: '100%' }} /></div>
+            <div><label style={lbl}>Phone</label><input value={form.phone || ''} onChange={e => set('phone', e.target.value)} style={{ width: '100%' }} /></div>
+          </div>
+          <div style={row}>
+            <div>
+              <label style={lbl}>Entity type *</label>
+              <select value={form.entity_type || 'Trust'} onChange={e => set('entity_type', e.target.value)} style={{ width: '100%' }}>
+                <option>Trust</option><option>Company</option><option>Both</option>
+              </select>
+            </div>
+            <div><label style={lbl}>SA ID / Passport</label><input value={form.id_number || ''} onChange={e => set('id_number', e.target.value)} style={{ width: '100%' }} /></div>
+          </div>
+
+          <div style={sect}>Location</div>
+          <div style={row}>
+            <div><label style={lbl}>Country</label><input value={form.country || ''} onChange={e => set('country', e.target.value)} style={{ width: '100%' }} placeholder="e.g. South Africa" /></div>
+            <div><label style={lbl}>City</label><input value={form.city || ''} onChange={e => set('city', e.target.value)} style={{ width: '100%' }} placeholder="e.g. Cape Town" /></div>
+          </div>
+
+          <div style={sect}>Setup type</div>
+          <div style={row}>
+            <div>
+              <label style={lbl}>New setup or transfer in?</label>
+              <select value={form.setup_type || 'New Setup'} onChange={e => set('setup_type', e.target.value)} style={{ width: '100%' }}>
+                <option>New Setup</option><option>Transfer In</option>
+              </select>
+            </div>
+            {form.setup_type === 'Transfer In' && (
+              <div><label style={lbl}>Transferring from (Management Co.)</label><input value={form.transfer_from_company || ''} onChange={e => set('transfer_from_company', e.target.value)} style={{ width: '100%' }} /></div>
+            )}
+          </div>
+
+          <div style={sect}>Referral</div>
+          <div style={row}>
+            <div>
+              <label style={lbl}>Referral source</label>
+              <select value={form.referral_source || ''} onChange={e => set('referral_source', e.target.value)} style={{ width: '100%' }}>
+                <option value="">— Select —</option>
+                {['Existing Client','Broker / IFA','Staff Referral','Website','Cold Call','Social Media','Other'].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div><label style={lbl}>Referred by (person name)</label><input value={form.referral_person || ''} onChange={e => set('referral_person', e.target.value)} style={{ width: '100%' }} /></div>
+          </div>
+
+          <div style={sect}>Relationship</div>
+          <div style={row}>
+            <div><label style={lbl}>Proposed director</label><input value={form.proposed_director || ''} onChange={e => set('proposed_director', e.target.value)} style={{ width: '100%' }} /></div>
+            <div><label style={lbl}>Client executive</label><input value={form.client_executive || ''} onChange={e => set('client_executive', e.target.value)} style={{ width: '100%' }} /></div>
+          </div>
+
+          <div style={sect}>Pipeline</div>
+          <div style={row}>
+            <div>
+              <label style={lbl}>Priority</label>
+              <select value={form.priority || 'Medium'} onChange={e => set('priority', e.target.value)} style={{ width: '100%' }}>
+                <option>High</option><option>Medium</option><option>Low</option>
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>Assigned advisor</label>
+              <select value={form.assigned_to || ''} onChange={e => set('assigned_to', e.target.value)} style={{ width: '100%' }}>
+                <option value="">— Unassigned —</option>
+                {teamMembers.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style={lbl}>Notes</label>
+            <textarea value={form.notes || ''} onChange={e => set('notes', e.target.value)} rows={3} style={{ width: '100%', resize: 'vertical' }} />
+          </div>
+
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button>
+        </div>
+      </form>
+    </Modal>
   )
 }
