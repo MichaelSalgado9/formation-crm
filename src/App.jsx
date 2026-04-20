@@ -8,6 +8,10 @@ import Clients from './pages/Clients'
 import ClientDetail from './pages/ClientDetail'
 import Tasks from './pages/Tasks'
 import Reports from './pages/Reports'
+import AdvisorsPage from './pages/AdvisorsPage'
+import AdvisorDetail from './pages/AdvisorDetail'
+import Advisors from './pages/Advisors'
+import AdvisorDetail from './pages/AdvisorDetail'
 
 function RequireAuth({ user, children }) {
   if (!user) return <Navigate to="/login" replace />
@@ -50,6 +54,13 @@ export default function App() {
                   <Route path="/clients/:id"       element={<ClientDetail />} />
                   <Route path="/tasks"             element={<Tasks />} />
                   <Route path="/reports"           element={<Reports />} />
+                  <Route path="/advisors/investment"  element={<AdvisorsPage type="Investment" />} />
+                  <Route path="/advisors/tax"         element={<AdvisorsPage type="Tax" />} />
+                  <Route path="/advisors/:type/:id"   element={<AdvisorDetail />} />
+                  <Route path="/investment-advisors"     element={<Advisors advisorType="Investment" />} />
+                  <Route path="/investment-advisors/:id" element={<AdvisorDetail advisorType="Investment" />} />
+                  <Route path="/tax-advisors"            element={<Advisors advisorType="Tax" />} />
+                  <Route path="/tax-advisors/:id"        element={<AdvisorDetail advisorType="Tax" />} />
                 </Routes>
               </Layout>
             </RequireAuth>
