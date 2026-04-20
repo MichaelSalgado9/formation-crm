@@ -56,7 +56,7 @@ export default function Clients() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Client', 'Type', 'Stage', 'Priority', 'Assigned', 'Added', ''].map(h => (
+                {['Client', 'Type', 'Stage', 'Exec / Director', 'Referral', 'Added', ''].map(h => (
                   <th key={h} style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', padding: '10px 14px', textTransform: 'uppercase', letterSpacing: '.4px', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -88,11 +88,15 @@ export default function Clients() {
                   <td style={{ padding: '10px 14px' }}><TypeBadge type={client.entity_type} /></td>
                   <td style={{ padding: '10px 14px' }}><StageBadge stage={client.stage} /></td>
                   <td style={{ padding: '10px 14px' }}><PriorityDot priority={client.priority} /></td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)' }}>
-                    {client.assigned_member?.full_name || '—'}
+                  <td style={{ padding: '10px 14px' }}>
+                    {client.client_executive && <div style={{ fontSize: 12, color: 'var(--text-2)' }}>👤 {client.client_executive}</div>}
+                    {client.proposed_director && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>🏛 {client.proposed_director}</div>}
+                    {!client.client_executive && !client.proposed_director && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>—</span>}
                   </td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                    {formatDistanceToNow(new Date(client.created_at), { addSuffix: true })}
+                  <td style={{ padding: '10px 14px' }}>
+                    {client.referral_source && <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{client.referral_source}</div>}
+                    {client.referral_person && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{client.referral_person}</div>}
+                    {!client.referral_source && !client.referral_person && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>View →</span>
