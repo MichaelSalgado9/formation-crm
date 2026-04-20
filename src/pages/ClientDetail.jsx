@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useClient, addNote, updateDocStatus, updateClientStage, createTask, updateTask } from '../hooks/useClients'
 import { STAGES } from '../lib/supabase'
 import { StageBadge, TypeBadge, PriorityDot, Avatar, Field, Spinner } from '../components/UI'
-import { formatDistanceToNow, format } from 'date-fns'
+import { formatDistanceToNow, format, differenceInDays } from 'date-fns'
 
 const DOC_STATUS_COLORS = {
   Pending:  { bg: '#F3F4F6', text: '#374151' },
@@ -148,6 +148,8 @@ export default function ClientDetail() {
 }
 
 function OverviewTab({ client }) {
+  const stageHistory = [...(client.stage_history || [])].sort((a, b) => new Date(a.entered_at) - new Date(b.entered_at))
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 700 }}>
       <div className="card" style={{ padding: '1rem', gridColumn: '1/-1' }}>
@@ -157,23 +159,66 @@ function OverviewTab({ client }) {
           <Field label="Phone">{client.phone || '—'}</Field>
           <Field label="SA ID / Passport">{client.id_number || '—'}</Field>
           <Field label="Source">{client.source || '—'}</Field>
+          <Field label="Date added">{client.created_at ? format(new Date(client.created_at), 'dd MMM yyyy') : '—'}</Field>
+          <Field label="Total days in pipeline">
+            {client.created_at
+              ? `${differenceInDays(new Date(), new Date(client.created_at))} days`
+              : '—'}
+          </Field>
         </div>
       </div>
-      <div className="card" style={{ padding: '1rem' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.4px' }}>Stage history</div>
-        {(client.stage_history || []).map((h, i) => (
-          <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'flex-start' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: h.exited_at ? '#10B981' : '#2563EB', marginTop: 4, flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 500 }}>{h.stage}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                {format(new Date(h.entered_at), 'dd MMM yyyy')}
-                {h.exited_at ? ` → ${format(new Date(h.exited_at), 'dd MMM yyyy')}` : ' (current)'}
+
+      <div className="card" style={{ padding: '1rem', gridColumn: '1/-1' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.4px' }}>Stage history — time in each stage</div>
+        {stageHistory.length === 0 && (
+          <p style={{ fontSize: 12, color: 'var(--text-3)' }}>No stage history yet.</p>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {stageHistory.map((h, i) => {
+            const isCurrent = !h.exited_at
+            const entered = new Date(h.entered_at)
+            const exited  = h.exited_at ? new Date(h.exited_at) : new Date()
+            const days    = differenceInDays(exited, entered)
+            const daysWarning = days > 14
+            const daysUrgent  = days > 30
+            return (
+              <div key={i} style={{
+                display: 'flex', gap: 12, alignItems: 'flex-start',
+                paddingBottom: 14, paddingLeft: 8,
+                borderLeft: `2px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`,
+                marginLeft: 8, position: 'relative'
+              }}>
+                {/* dot */}
+                <div style={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: isCurrent ? 'var(--accent)' : '#10B981',
+                  position: 'absolute', left: -6, top: 2, flexShrink: 0
+                }} />
+                <div style={{ paddingLeft: 12, flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: isCurrent ? 'var(--accent)' : 'var(--text)' }}>
+                      {h.stage} {isCurrent && <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--accent)' }}>(current)</span>}
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      padding: '2px 8px', borderRadius: 20,
+                      background: daysUrgent ? '#FEE2E2' : daysWarning ? '#FEF3C7' : '#D1FAE5',
+                      color: daysUrgent ? '#991B1B' : daysWarning ? '#92400E' : '#065F46',
+                    }}>
+                      {days === 0 ? 'Less than 1 day' : `${days} day${days !== 1 ? 's' : ''}`}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                    {format(entered, 'dd MMM yyyy')}
+                    {h.exited_at ? ` → ${format(new Date(h.exited_at), 'dd MMM yyyy')}` : ' → present'}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            )
+          })}
+        </div>
       </div>
+
       <div className="card" style={{ padding: '1rem' }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.4px' }}>Notes</div>
         <p style={{ fontSize: 13, color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>{client.notes || 'No notes.'}</p>
