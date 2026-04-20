@@ -1,124 +1,14 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --font: 'DM Sans', system-ui, sans-serif;
-  --font-mono: 'DM Mono', monospace;
-
-  --bg:        #F7F6F3;
-  --surface:   #FFFFFF;
-  --surface2:  #F2F1EE;
-  --border:    rgba(0,0,0,0.08);
-  --border-md: rgba(0,0,0,0.14);
-
-  --text:      #1A1917;
-  --text-2:    #5C5A56;
-  --text-3:    #9B9892;
-
-  --accent:    #2563EB;
-  --accent-bg: #EFF6FF;
-
-  --radius-sm: 6px;
-  --radius:    10px;
-  --radius-lg: 14px;
-
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow:    0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
-}
-
-html, body, #root {
-  height: 100%;
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-a { color: inherit; text-decoration: none; }
-
-button {
-  font-family: var(--font);
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-size: 13px;
-}
-
-input, select, textarea {
-  font-family: var(--font);
-  font-size: 13px;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border-md);
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  outline: none;
-  transition: border-color .15s;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
-}
-
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 10px; }
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 500;
-  transition: all .15s;
-  white-space: nowrap;
-}
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-}
-.btn-primary:hover { background: #1D4ED8; }
-.btn-ghost {
-  border: 1px solid var(--border-md);
-  color: var(--text-2);
-}
-.btn-ghost:hover { background: var(--surface2); }
-.btn-danger { color: #DC2626; border: 1px solid #FCA5A5; }
-.btn-danger:hover { background: #FEF2F2; }
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 20px;
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-}
-
-.spinner {
-  width: 18px; height: 18px;
-  border: 2px solid var(--border-md);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin .6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 3rem; color: var(--text-3);
-  text-align: center; gap: 8px;
-}
-.empty-state svg { opacity: .35; }
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The LCA Front Row</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
