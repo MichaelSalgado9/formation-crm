@@ -4,7 +4,11 @@ import { useClients, updateClientStage, useTeamMembers } from '../hooks/useClien
 import { STAGES, STAGE_META } from '../lib/supabase'
 import { StageBadge, TypeBadge, PriorityDot, DocProgress, Avatar } from '../components/UI'
 import NewClientModal from '../components/NewClientModal'
-import { formatDistanceToNow, differenceInDays, format } from 'date-fns'
+import { differenceInDays, format } from 'date-fns'
+
+// Follow-up cadence per priority
+const FOLLOWUP_DAYS = { High: 14, Medium: 30, Low: 90 }
+const FOLLOWUP_LABEL = { High: 'Every 2 weeks', Medium: 'Every month', Low: 'Every 3 months' }
 
 export default function Pipeline() {
   const navigate = useNavigate()
@@ -68,6 +72,12 @@ export default function Pipeline() {
             <option value="">All advisors</option>
             {teamMembers.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
           </select>
+          <button className="btn btn-ghost" onClick={() => navigate('/advisors/investment')}>
+            + Inv. Advisor
+          </button>
+          <button className="btn btn-ghost" onClick={() => navigate('/advisors/tax')}>
+            + Tax Advisor
+          </button>
           <button className="btn btn-primary" onClick={() => setNewOpen(true)}>
             + New client
           </button>
@@ -179,6 +189,11 @@ function ClientCard({ client, onClick, onMove, stageIndex }) {
     ? (client.referral_person ? `${client.referral_source} — ${client.referral_person}` : client.referral_source)
     : client.referral_person || null
 
+  // Follow-up tracking
+  const followupDays    = FOLLOWUP_DAYS[client.priority]
+  const followupLabel   = FOLLOWUP_LABEL[client.priority]
+  const followupOverdue = daysInStage !== null && followupDays && daysInStage > followupDays
+
   return (
     <div
       className="card"
@@ -192,6 +207,19 @@ function ClientCard({ client, onClick, onMove, stageIndex }) {
         <TypeBadge type={client.entity_type} />
         <PriorityDot priority={client.priority} />
       </div>
+
+      {/* Follow-up cadence + overdue alert */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text-3)', border: '1px solid var(--border)' }}>
+          🔁 {followupLabel}
+        </span>
+        {followupOverdue && (
+          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: '#FEE2E2', color: '#991B1B', fontWeight: 600, border: '1px solid #FCA5A5' }}>
+            ⚠️ Follow up overdue
+          </span>
+        )}
+      </div>
+
       <div style={{ marginBottom: 6 }}>
         <MetaRow icon="👤" label="Exec"     value={client.client_executive} />
         <MetaRow icon="🏛" label="Director" value={client.proposed_director} />
