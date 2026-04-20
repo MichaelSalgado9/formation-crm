@@ -25,7 +25,8 @@ export function useClients(filters = {}) {
     if (filters.priority)         q = q.eq('priority', filters.priority)
     if (filters.assigned_to)      q = q.eq('assigned_to', filters.assigned_to)
     if (filters.client_executive) q = q.ilike('client_executive', `%${filters.client_executive}%`)
-    if (filters.search)           q = q.ilike('name', `%${filters.search}%`)
+    if (filters.proposed_director) q = q.ilike('proposed_director', `%${filters.proposed_director}%`)
+    if (filters.search)            q = q.ilike('name', `%${filters.search}%`)
 
     const { data, error } = await q
     if (error) setError(error)
