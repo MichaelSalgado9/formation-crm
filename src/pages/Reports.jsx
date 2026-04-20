@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { STAGES, STAGE_META, TYPE_META } from '../lib/supabase'
+import { differenceInDays } from 'date-fns'
 
 export default function Reports() {
   const [stats, setStats] = useState(null)
@@ -8,10 +9,11 @@ export default function Reports() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: clients }, { data: tasks }, { data: docs }] = await Promise.all([
+      const [{ data: clients }, { data: tasks }, { data: docs }, { data: stageHistory }] = await Promise.all([
         supabase.from('clients').select('stage, entity_type, priority, created_at').eq('is_archived', false),
         supabase.from('tasks').select('status, due_date'),
         supabase.from('documents').select('status'),
+        supabase.from('stage_history').select('stage, entered_at, exited_at'),
       ])
 
       const byStage = Object.fromEntries(STAGES.map(s => [s, 0]))
@@ -24,13 +26,26 @@ export default function Reports() {
         byPri[c.priority] = (byPri[c.priority] || 0) + 1
       })
 
-      const totalDocs = (docs || []).length
-      const verifiedDocs = (docs || []).filter(d => d.status === 'Verified').length
+      // Average days per stage
+      const avgDaysPerStage = {}
+      STAGES.forEach(stage => {
+        const entries = (stageHistory || []).filter(h => h.stage === stage && h.exited_at)
+        if (entries.length) {
+          const totalDays = entries.reduce((sum, h) => {
+            return sum + differenceInDays(new Date(h.exited_at), new Date(h.entered_at))
+          }, 0)
+          avgDaysPerStage[stage] = Math.round(totalDays / entries.length)
+        } else {
+          avgDaysPerStage[stage] = null
+        }
+      })
 
-      const openTasks  = (tasks || []).filter(t => t.status === 'Open' || t.status === 'In Progress').length
+      const totalDocs    = (docs || []).length
+      const verifiedDocs = (docs || []).filter(d => d.status === 'Verified').length
+      const openTasks    = (tasks || []).filter(t => t.status === 'Open' || t.status === 'In Progress').length
       const overdueTasks = (tasks || []).filter(t => t.status !== 'Done' && t.due_date && new Date(t.due_date) < new Date()).length
 
-      setStats({ byStage, byType, byPri, totalDocs, verifiedDocs, total: clients?.length || 0, openTasks, overdueTasks })
+      setStats({ byStage, byType, byPri, totalDocs, verifiedDocs, total: clients?.length || 0, openTasks, overdueTasks, avgDaysPerStage })
       setLoading(false)
     }
     load()
@@ -66,7 +81,7 @@ export default function Reports() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
           {/* Pipeline breakdown */}
           <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: '1rem' }}>Clients by stage</div>
@@ -122,6 +137,37 @@ export default function Reports() {
             </div>
           </div>
         </div>
+
+        {/* Average days per stage */}
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: '0.25rem' }}>Average days spent per stage</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: '1rem' }}>Based on completed stage transitions. 🟡 over 14 days · 🔴 over 30 days</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+            {STAGES.map(stage => {
+              const avg = stats.avgDaysPerStage[stage]
+              const m   = STAGE_META[stage]
+              const warn = avg !== null && avg > 14
+              const urgent = avg !== null && avg > 30
+              return (
+                <div key={stage} style={{
+                  background: urgent ? '#FEF2F2' : warn ? '#FFFBEB' : 'var(--surface2)',
+                  border: `1px solid ${urgent ? '#FCA5A5' : warn ? '#FDE68A' : 'var(--border)'}`,
+                  borderRadius: 10, padding: '12px 14px',
+                  borderTop: `3px solid ${m.color}`
+                }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>{stage}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: urgent ? '#DC2626' : warn ? '#92400E' : 'var(--text)' }}>
+                    {avg !== null ? `${avg}d` : '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                    {avg === null ? 'No data yet' : avg === 0 ? 'Less than 1 day' : 'avg per client'}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
       </div>
     </div>
   )
