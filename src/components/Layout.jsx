@@ -35,10 +35,10 @@ export default function Layout({ user, children }) {
           borderBottom: '1px solid rgba(255,255,255,0.06)'
         }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '.3px' }}>
-            Formation CRM
+            The LCA Front Row
           </div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-            Trust &amp; Company
+            LC Abelheim
           </div>
         </div>
 
