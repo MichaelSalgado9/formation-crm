@@ -4,7 +4,7 @@ import { useClients, updateClientStage, useTeamMembers } from '../hooks/useClien
 import { STAGES, STAGE_META } from '../lib/supabase'
 import { StageBadge, TypeBadge, PriorityDot, DocProgress, Avatar } from '../components/UI'
 import NewClientModal from '../components/NewClientModal'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, differenceInDays, format } from 'date-fns'
 
 export default function Pipeline() {
   const navigate = useNavigate()
@@ -157,6 +157,15 @@ export default function Pipeline() {
 }
 
 function ClientCard({ client, onClick, onMove, stageIndex }) {
+  const daysInStage = client.stage_entered_at
+    ? differenceInDays(new Date(), new Date(client.stage_entered_at))
+    : client.created_at
+    ? differenceInDays(new Date(), new Date(client.created_at))
+    : null
+
+  const daysWarning = daysInStage !== null && daysInStage > 14
+  const daysUrgent  = daysInStage !== null && daysInStage > 30
+
   return (
     <div
       className="card"
@@ -170,6 +179,29 @@ function ClientCard({ client, onClick, onMove, stageIndex }) {
         <TypeBadge type={client.entity_type} />
         <PriorityDot priority={client.priority} />
       </div>
+
+      {/* Date added */}
+      {client.created_at && (
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span>📅</span>
+          <span>Added {format(new Date(client.created_at), 'dd MMM yyyy')}</span>
+        </div>
+      )}
+
+      {/* Days in current stage */}
+      {daysInStage !== null && (
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          fontSize: 11, fontWeight: 600,
+          padding: '2px 7px', borderRadius: 20, marginBottom: 6,
+          background: daysUrgent ? '#FEE2E2' : daysWarning ? '#FEF3C7' : 'var(--surface2)',
+          color: daysUrgent ? '#991B1B' : daysWarning ? '#92400E' : 'var(--text-2)',
+        }}>
+          <span>{daysUrgent ? '🔴' : daysWarning ? '🟡' : '🟢'}</span>
+          {daysInStage === 0 ? 'Today' : `${daysInStage}d in stage`}
+        </div>
+      )}
+
       {client.documents?.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           <DocProgress documents={client.documents} />
@@ -180,9 +212,6 @@ function ClientCard({ client, onClick, onMove, stageIndex }) {
           {client.assigned_member && (
             <Avatar name={client.assigned_member.full_name} size={20} />
           )}
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            {client.created_at && formatDistanceToNow(new Date(client.created_at), { addSuffix: true })}
-          </span>
         </div>
         <div style={{ display: 'flex', gap: 2 }} onClick={e => e.stopPropagation()}>
           {stageIndex > 0 && (
