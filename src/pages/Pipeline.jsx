@@ -29,10 +29,10 @@ export default function Pipeline() {
   const byStage = stage => clients.filter(c => c.stage === stage)
 
   const metrics = {
-    total:    clients.length,
-    high:     clients.filter(c => c.priority === 'High').length,
-    docsColl: clients.filter(c => c.stage === 'Document Collection').length,
-    fica:     clients.filter(c => c.stage === 'Compliance / FICA').length,
+    total:   clients.length,
+    high:    clients.filter(c => c.priority === 'High').length,
+    wip:     clients.filter(c => c.stage === 'WIP').length,
+    ongoing: clients.filter(c => c.stage === 'Ongoing Management').length,
   }
 
   return (
@@ -83,8 +83,8 @@ export default function Pipeline() {
         {[
           { label: 'Total clients',      val: metrics.total },
           { label: 'High priority',      val: metrics.high },
-          { label: 'Awaiting docs',      val: metrics.docsColl },
-          { label: 'Compliance / FICA',  val: metrics.fica },
+          { label: 'WIP',                val: metrics.wip },
+          { label: 'Ongoing Management', val: metrics.ongoing },
         ].map((m, i) => (
           <div key={i} style={{
             flex: 1, padding: '10px 1.25rem',
