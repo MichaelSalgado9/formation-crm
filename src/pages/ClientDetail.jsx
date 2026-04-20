@@ -70,13 +70,13 @@ export default function ClientDetail() {
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={() => setEditOpen(true)}>✏️ Edit client</button>
             {stageIdx > 0 && <button className="btn btn-ghost" onClick={() => moveStage(-1)}>← Move back</button>}
-            {stageIdx < 4 && <button className="btn btn-primary" onClick={() => moveStage(1)}>Advance to {STAGES[stageIdx + 1]} →</button>}
+            {stageIdx < 2 && <button className="btn btn-primary" onClick={() => moveStage(1)}>Advance to {STAGES[stageIdx + 1]} →</button>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 0, marginTop: 16 }}>
           {STAGES.map((s, i) => (
             <div key={s} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{ height: 4, background: i <= stageIdx ? '#2563EB' : 'var(--surface2)', width: '100%', borderRadius: i === 0 ? '4px 0 0 4px' : i === 4 ? '0 4px 4px 0' : 0, transition: 'background .3s' }} />
+              <div style={{ height: 4, background: i <= stageIdx ? '#2563EB' : 'var(--surface2)', width: '100%', borderRadius: i === 0 ? '4px 0 0 4px' : i === 2 ? '0 4px 4px 0' : 0, transition: 'background .3s' }} />
               <span style={{ fontSize: 10, color: i === stageIdx ? 'var(--accent)' : 'var(--text-3)', fontWeight: i === stageIdx ? 600 : 400 }}>{s.split(' ').slice(0, 2).join(' ')}</span>
             </div>
           ))}
