@@ -14,7 +14,8 @@ export function useClients(filters = {}) {
         *,
         assigned_member:team_members(id, full_name, avatar_url),
         documents(id, status),
-        tasks(id, status)
+        tasks(id, status),
+        stage_history(stage, entered_at, exited_at)
       `)
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
@@ -27,7 +28,16 @@ export function useClients(filters = {}) {
 
     const { data, error } = await q
     if (error) setError(error)
-    else setClients(data || [])
+    else {
+      // attach current stage entered_at to each client for easy access
+      const enriched = (data || []).map(c => ({
+        ...c,
+        stage_entered_at: (c.stage_history || [])
+          .filter(h => h.stage === c.stage && !h.exited_at)
+          .map(h => h.entered_at)[0] || c.created_at
+      }))
+      setClients(enriched)
+    }
     setLoading(false)
   }, [JSON.stringify(filters)])
 
