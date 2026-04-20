@@ -62,19 +62,38 @@ export function useClient(id) {
   const fetch = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const { data } = await supabase
+
+    const { data: clientData, error } = await supabase
       .from('clients')
-      .select(`
-        *,
-        assigned_member:team_members(id, full_name, avatar_url),
-        documents(*),
-        notes(*, author:team_members(full_name)),
-        tasks(*, assigned_member:team_members(full_name)),
-        stage_history(*, moved_by_member:team_members(full_name))
-      `)
+      .select('*, assigned_member:team_members(id, full_name, avatar_url)')
       .eq('id', id)
       .single()
-    setClient(data)
+
+    if (error || !clientData) {
+      setClient(null)
+      setLoading(false)
+      return
+    }
+
+    const [
+      { data: documents },
+      { data: notes },
+      { data: tasks },
+      { data: stage_history },
+    ] = await Promise.all([
+      supabase.from('documents').select('*').eq('client_id', id),
+      supabase.from('notes').select('*, author:team_members(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
+      supabase.from('tasks').select('*, assigned_member:team_members(full_name)').eq('client_id', id),
+      supabase.from('stage_history').select('*, moved_by_member:team_members(full_name)').eq('client_id', id),
+    ])
+
+    setClient({
+      ...clientData,
+      documents: documents || [],
+      notes: notes || [],
+      tasks: tasks || [],
+      stage_history: stage_history || [],
+    })
     setLoading(false)
   }, [id])
 
