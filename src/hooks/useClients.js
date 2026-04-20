@@ -170,3 +170,99 @@ export function useActivityLog(clientId) {
   }, [clientId])
   return log
 }
+
+// ============================================================
+// ADVISORS
+// ============================================================
+
+export function useAdvisors(type) {
+  const [advisors, setAdvisors] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const fetch = useCallback(async () => {
+    setLoading(true)
+    let q = supabase
+      .from('advisors')
+      .select(`*, client_advisors(client_id, notes, clients(id, name, entity_type))`)
+      .eq('is_active', true)
+      .order('full_name')
+    if (type) q = q.eq('advisor_type', type)
+    const { data } = await q
+    setAdvisors(data || [])
+    setLoading(false)
+  }, [type])
+
+  useEffect(() => { fetch() }, [fetch])
+  return { advisors, loading, refetch: fetch }
+}
+
+export function useAdvisor(id) {
+  const [advisor, setAdvisor] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetch = useCallback(async () => {
+    if (!id) return
+    setLoading(true)
+    const { data } = await supabase
+      .from('advisors')
+      .select(`
+        *,
+        client_advisors(*, client:clients(id, name, entity_type, stage)),
+        advisor_history(*, author:team_members(full_name)),
+        advisor_documents(*)
+      `)
+      .eq('id', id)
+      .single()
+    setAdvisor(data)
+    setLoading(false)
+  }, [id])
+
+  useEffect(() => { fetch() }, [fetch])
+  return { advisor, loading, refetch: fetch }
+}
+
+export async function createAdvisor(data) {
+  const { data: advisor, error } = await supabase
+    .from('advisors').insert(data).select().single()
+  return { advisor, error }
+}
+
+export async function updateAdvisor(id, data) {
+  const { error } = await supabase.from('advisors').update(data).eq('id', id)
+  return { error }
+}
+
+export async function linkAdvisorToClient(advisorId, clientId, advisorType, notes = '') {
+  const { error } = await supabase.from('client_advisors').upsert({
+    advisor_id: advisorId, client_id: clientId, advisor_type: advisorType, notes
+  })
+  return { error }
+}
+
+export async function unlinkAdvisorFromClient(advisorId, clientId) {
+  const { error } = await supabase.from('client_advisors')
+    .delete().eq('advisor_id', advisorId).eq('client_id', clientId)
+  return { error }
+}
+
+export async function addAdvisorHistory(advisorId, clientId, summary, authorId) {
+  const { error } = await supabase.from('advisor_history').insert({
+    advisor_id: advisorId, client_id: clientId || null, summary, author_id: authorId,
+    date: new Date().toISOString().slice(0, 10)
+  })
+  return { error }
+}
+
+export function useClientAdvisors(clientId) {
+  const [linkedAdvisors, setLinkedAdvisors] = useState([])
+  const fetch = useCallback(async () => {
+    if (!clientId) return
+    const { data } = await supabase
+      .from('client_advisors')
+      .select('*, advisor:advisors(*)')
+      .eq('client_id', clientId)
+    setLinkedAdvisors(data || [])
+  }, [clientId])
+  useEffect(() => { fetch() }, [fetch])
+  return { linkedAdvisors, refetch: fetch }
+}
