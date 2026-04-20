@@ -116,7 +116,7 @@ export default function Pipeline() {
           const m = STAGE_META[stage]
           const cols = byStage(stage)
           return (
-            <div key={stage} style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div key={stage} style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {/* Column header */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -134,7 +134,7 @@ export default function Pipeline() {
               </div>
 
               {/* Cards */}
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {loading && <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-3)' }}>…</div>}
                 {!loading && cols.length === 0 && (
                   <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: '16px 0' }}>
@@ -169,10 +169,10 @@ export default function Pipeline() {
 function MetaRow({ icon, label, value }) {
   if (!value) return null
   return (
-    <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
-      <span style={{ flexShrink: 0 }}>{icon}</span>
-      <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>{label}:</span>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+    <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+      <span style={{ flexShrink: 0, fontSize: 10 }}>{icon}</span>
+      <span style={{ color: 'var(--text-3)', fontWeight: 500, flexShrink: 0 }}>{label}:</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{value}</span>
     </div>
   )
 }
@@ -198,58 +198,40 @@ function ClientCard({ client, onClick, onMove, stageIndex }) {
     <div
       className="card"
       onClick={onClick}
-      style={{ padding: '10px 12px', cursor: 'pointer', transition: 'box-shadow .15s' }}
+      style={{ padding: '7px 10px', cursor: 'pointer', transition: 'box-shadow .15s' }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = ''}
     >
-      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 5 }}>{client.name}</div>
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4, marginBottom: 3 }}>
+        <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3, flex: 1 }}>{client.name}</div>
         <TypeBadge type={client.entity_type} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, flexWrap: 'wrap' }}>
         <PriorityDot priority={client.priority} />
-      </div>
-
-      {/* Follow-up cadence + overdue alert */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'var(--surface2)', color: 'var(--text-3)', border: '1px solid var(--border)' }}>
-          🔁 {followupLabel}
+        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: followupOverdue ? '#FEE2E2' : 'var(--surface2)', color: followupOverdue ? '#991B1B' : 'var(--text-3)', border: `1px solid ${followupOverdue ? '#FCA5A5' : 'var(--border)'}`, fontWeight: followupOverdue ? 600 : 400 }}>
+          {followupOverdue ? '⚠️ Overdue' : `🔁 ${followupLabel}`}
         </span>
-        {followupOverdue && (
-          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: '#FEE2E2', color: '#991B1B', fontWeight: 600, border: '1px solid #FCA5A5' }}>
-            ⚠️ Follow up overdue
-          </span>
-        )}
       </div>
-
-      <div style={{ marginBottom: 6 }}>
-        <MetaRow icon="👤" label="Exec"     value={client.client_executive} />
-        <MetaRow icon="🏛" label="Director" value={client.proposed_director} />
-        <MetaRow icon="↗"  label="Referral" value={referralLabel} />
+      <div style={{ marginBottom: 3 }}>
+        <MetaRow icon="👤" label="Exec" value={client.client_executive} />
+        <MetaRow icon="🏛" label="Dir"  value={client.proposed_director} />
+        {referralLabel && <MetaRow icon="↗" label="Ref" value={referralLabel} />}
       </div>
-      {client.created_at && (
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span>📅</span>
-          <span>Added {format(new Date(client.created_at), 'dd MMM yyyy')}</span>
-        </div>
-      )}
-      {daysInStage !== null && (
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 20, marginBottom: 6, background: daysUrgent ? '#FEE2E2' : daysWarning ? '#FEF3C7' : 'var(--surface2)', color: daysUrgent ? '#991B1B' : daysWarning ? '#92400E' : 'var(--text-2)' }}>
-          <span>{daysUrgent ? '🔴' : daysWarning ? '🟡' : '🟢'}</span>
-          {daysInStage === 0 ? 'Today' : `${daysInStage}d in stage`}
-        </div>
-      )}
-      {client.documents?.length > 0 && (
-        <div style={{ marginBottom: 8 }}><DocProgress documents={client.documents} /></div>
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          {client.assigned_member && <Avatar name={client.assigned_member.full_name} size={20} />}
-          {client.assigned_member && <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{client.assigned_member.full_name}</span>}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {daysInStage !== null && (
+            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 20, background: daysUrgent ? '#FEE2E2' : daysWarning ? '#FEF3C7' : 'var(--surface2)', color: daysUrgent ? '#991B1B' : daysWarning ? '#92400E' : 'var(--text-3)' }}>
+              {daysUrgent ? '🔴' : daysWarning ? '🟡' : '🟢'} {daysInStage === 0 ? 'Today' : `${daysInStage}d`}
+            </span>
+          )}
+          {client.assigned_member && <Avatar name={client.assigned_member.full_name} size={16} />}
         </div>
         <div style={{ display: 'flex', gap: 2 }} onClick={e => e.stopPropagation()}>
-          {stageIndex > 0 && <button onClick={() => onMove(-1)} title="Move back" style={{ fontSize: 12, color: 'var(--text-3)', padding: '2px 5px' }}>←</button>}
-          {stageIndex < 4 && <button onClick={() => onMove(1)} title="Advance stage" style={{ fontSize: 12, color: 'var(--accent)', padding: '2px 5px', fontWeight: 600 }}>→</button>}
+          {stageIndex > 0 && <button onClick={() => onMove(-1)} style={{ fontSize: 11, color: 'var(--text-3)', padding: '1px 4px' }}>←</button>}
+          {stageIndex < 2 && <button onClick={() => onMove(1)} style={{ fontSize: 11, color: 'var(--accent)', padding: '1px 4px', fontWeight: 600 }}>→</button>}
         </div>
       </div>
     </div>
   )
 }
+
