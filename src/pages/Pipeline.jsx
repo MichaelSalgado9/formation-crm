@@ -68,9 +68,13 @@ export default function Pipeline() {
             <option>Medium</option>
             <option>Low</option>
           </select>
-          <select onChange={e => setFilter('assigned_to', e.target.value)}>
-            <option value="">All advisors</option>
-            {teamMembers.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+          <select onChange={e => setFilter('client_executive', e.target.value)}>
+            <option value="">All executives</option>
+            <option value="Andrew">Andrew Fox</option>
+            <option value="William">William Du Toit</option>
+            <option value="James">James</option>
+            <option value="Michael">Michael</option>
+            <option value="Mitchell">Mitchell</option>
           </select>
           <button className="btn btn-ghost" onClick={() => navigate('/advisors/investment')}>
             + Inv. Advisor
