@@ -20,11 +20,12 @@ export function useClients(filters = {}) {
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
 
-    if (filters.stage)         q = q.eq('stage', filters.stage)
-    if (filters.entity_type)   q = q.eq('entity_type', filters.entity_type)
-    if (filters.priority)      q = q.eq('priority', filters.priority)
-    if (filters.assigned_to)   q = q.eq('assigned_to', filters.assigned_to)
-    if (filters.search)        q = q.ilike('name', `%${filters.search}%`)
+    if (filters.stage)            q = q.eq('stage', filters.stage)
+    if (filters.entity_type)      q = q.eq('entity_type', filters.entity_type)
+    if (filters.priority)         q = q.eq('priority', filters.priority)
+    if (filters.assigned_to)      q = q.eq('assigned_to', filters.assigned_to)
+    if (filters.client_executive) q = q.ilike('client_executive', `%${filters.client_executive}%`)
+    if (filters.search)           q = q.ilike('name', `%${filters.search}%`)
 
     const { data, error } = await q
     if (error) setError(error)
